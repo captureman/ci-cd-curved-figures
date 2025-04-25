@@ -1,1 +1,0 @@
-typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"org.example","l":"ShapeFactory"},{"p":"org.example","l":"TestClass"},{"p":"org.example","l":"TitlesFrame"},{"p":"org.example","l":"TitlesPanel"}];updateSearchResults();

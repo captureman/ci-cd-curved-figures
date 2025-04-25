@@ -9,119 +9,110 @@ import java.awt.geom.AffineTransform;
 /**
  * A JPanel that displays a grid of rotating geometric shapes (as defined by {@link ShapeFactory}).
  * The shapes are animated and their rotation is controlled by a timer.
+ * The animation runs at a fixed rate and the shapes are drawn at various positions on the panel.
  */
 public class TitlesPanel extends JPanel implements ActionListener {
 
    /**
-    * Graphics2D object used for rendering shapes.
+    * Graphics2D object used to perform rendering.
     */
    private Graphics2D g2d;
 
    /**
-    * Timer object used to control the animation of the shapes.
+    * Timer responsible for triggering the animation.
     */
    private Timer animation;
 
    /**
-    * Flag indicating whether the drawing operation is complete or not.
+    * Flag to track the drawing state.
     */
-   private boolean is_done = true;
+   private boolean isDone = true;
 
    /**
-    * The starting angle for rotating the shapes.
+    * The current angle of rotation for the shapes.
     */
-   private int start_angle = 0;
+   private int startAngle = 0;
 
    /**
-    * The type of shape to be drawn, passed as a parameter to the {@link ShapeFactory}.
+    * Shape type that defines the kind of shape to be drawn.
     */
    private int shape;
 
    /**
-    * Constructs a TitlesPanel with a specific shape type.
-    * Initializes the animation timer.
+    * Constructor to initialize the TitlesPanel with a specific shape type.
     *
-    * @param _shape The type of shape to draw, passed to the {@link ShapeFactory}.
+    * @param shapeType The type of shape to display (e.g., star, triangle, etc.).
     */
-   public TitlesPanel(int _shape) {
-      this.shape = _shape;
-      // Initializes the Timer to trigger every 50 milliseconds
-      (this.animation = new Timer(50, this)).setInitialDelay(50);
-      this.animation.start();
+   public TitlesPanel(int shapeType) {
+      this.shape = shapeType;
+      this.animation = new Timer(50, this);  // Set timer interval to 50ms
+      this.animation.setInitialDelay(50);    // Initial delay of 50ms before starting animation
+      this.animation.start();                // Start the animation
    }
 
    /**
-    * Handles the timer events. Repaints the panel when triggered.
+    * Called whenever the timer triggers an event. It repaints the panel to update the animation.
     *
-    * @param arg0 The ActionEvent triggered by the Timer.
+    * @param arg0 The ActionEvent triggered by the timer.
     */
+   @Override
    public void actionPerformed(ActionEvent arg0) {
-      if (this.is_done) {
-         // Repaint the panel when the timer fires
-         this.repaint();
+      if (isDone) {
+         repaint();  // Repaint the panel to animate the shapes
       }
    }
 
    /**
-    * Performs the actual drawing of shapes. This method is called from {@link #paintComponent(Graphics)}.
-    * It draws a grid of rotating shapes based on the current angle and shape type.
+    * Handles the drawing logic for the panel. Shapes are drawn and rotated on the panel at various positions.
     *
-    * @param g The Graphics object used for rendering the shapes.
+    * @param g The Graphics object used for drawing on the panel.
     */
    private void doDrawing(Graphics g) {
-      this.is_done = false;
+      isDone = false;
+      g2d = (Graphics2D) g;
+      g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-      // Set up the Graphics2D context for better rendering quality
-      (this.g2d = (Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-      // Get the panel size and insets
-      Dimension size = this.getSize();
-      Insets insets = this.getInsets();
+      // Get panel size and adjust drawing area for insets
+      Dimension size = getSize();
+      Insets insets = getInsets();
       int w = size.width - insets.left - insets.right;
       int h = size.height - insets.top - insets.bottom;
 
-      // Create the shape using the provided shape type
-      ShapeFactory shape = new ShapeFactory(this.shape);
+      // Create shape using ShapeFactory
+      ShapeFactory shapeFactory = new ShapeFactory(shape);
+      g2d.setStroke(shapeFactory.getStroke());
+      g2d.setPaint(shapeFactory.getPaint());
 
-      // Set the stroke and paint based on the ShapeFactory's properties
-      this.g2d.setStroke(shape.stroke);
-      this.g2d.setPaint(shape.paint);
-
-      // Calculate the rotation angle for each shape
-      double angle = (double) (this.start_angle++);
-      if (this.start_angle > 360) {
-         this.start_angle = 0;
+      // Increment and reset the rotation angle
+      double angle = startAngle++;
+      if (startAngle > 360) {
+         startAngle = 0;
       }
 
-      // Calculate the angle increment based on panel width and shape width
-      double dr = 90.0D / ((double) w / ((double) shape.width * 1.5D));
+      // Adjust rotation speed based on the width of the panel
+      double dr = 90.0D / ((double) w / (shapeFactory.getWidth() * 1.5D));
 
-      // Draw the shapes in a grid pattern
-      for (int j = shape.height; j < h; j += (int) ((double) shape.height * 1.5D)) {
-         for (int i = shape.width; i < w; i += (int) ((double) shape.width * 1.5D)) {
+      // Draw shapes in a grid pattern
+      for (int j = shapeFactory.getHeight(); j < h; j += (int) (shapeFactory.getHeight() * 1.5D)) {
+         for (int i = shapeFactory.getWidth(); i < w; i += (int) (shapeFactory.getWidth() * 1.5D)) {
             angle = angle > 360.0D ? 0.0D : angle + dr;
-
-            // Apply translation and rotation to the shape
             AffineTransform transform = new AffineTransform();
-            transform.translate((double) i, (double) j);
-            transform.rotate(Math.toRadians(angle));
-
-            // Draw the transformed shape
-            this.g2d.draw(transform.createTransformedShape(shape.shape));
+            transform.translate(i, j);  // Translate shape to grid position
+            transform.rotate(Math.toRadians(angle));  // Rotate shape
+            g2d.draw(transform.createTransformedShape(shapeFactory.getShape()));  // Draw the shape
          }
       }
-
-      this.is_done = true;
+      isDone = true;
    }
 
    /**
-    * Paints the component by calling {@link #doDrawing(Graphics)} to perform the actual drawing.
-    * This method is called automatically by the Swing framework when the component needs to be redrawn.
+    * Paints the component by calling the custom drawing logic.
     *
-    * @param g The Graphics object used for painting the component.
+    * @param g The Graphics object to paint with.
     */
+   @Override
    public void paintComponent(Graphics g) {
-      super.paintComponent(g);
-      this.doDrawing(g);
+      super.paintComponent(g);  // Call superclass method to handle basic painting
+      doDrawing(g);  // Custom drawing logic
    }
 }
